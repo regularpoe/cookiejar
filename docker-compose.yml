@@ -1,0 +1,10 @@
+services:
+  cookiejar:
+    image: cookiejar
+    container_name: cookiejar
+    ports:
+      - "2408:2408"
+    build:
+      context: ./cookiejar
+    environment:
+      - TZ=Europe/Zagreb
