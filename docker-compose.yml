@@ -8,3 +8,13 @@ services:
       context: ./cookiejar
     environment:
       - TZ=Europe/Zagreb
+
+  strings:
+    image: strings
+    container_name: strings
+    ports:
+      - "2410:2410"
+    build:
+      context: ./strings
+    environment:
+      - TZ=Europe/Zagreb
