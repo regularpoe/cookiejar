@@ -20,3 +20,59 @@ services:
       context: ./strings
     environment:
       - TZ=Europe/Zagreb
+
+  nginx:
+    image: nginx:1.27.2
+    container_name: nginx
+    volumes:
+      - ./volumes/nginx/conf/default.conf:/etc/nginx/conf.d/default.conf
+      - ./volumes/nginx/certs/hollow.localhost.crt:/etc/nginx/certs/hollow.localhost.crt
+      - ./volumes/nginx/certs/hollow.localhost.key:/etc/nginx/certs/hollow.localhost.key
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.2
+    container_name: elasticsearch
+    env_file:
+      - .env
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=true
+      - xpack.license.self_generated.type=basic
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    depends_on:
+      - nginx
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.2
+    container_name: kibana
+    env_file:
+      - .env
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_USERNAME=kibana_system
+      - XPACK_MONITORING_ENABLED=true
+      - telemetry.enabled=false
+    volumes:
+      - ./volumes/kibana/conf/kibana.yml:/usr/share/kibana/config/kibana.yml
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+volumes:
+  esdata:
+    driver: local
+
