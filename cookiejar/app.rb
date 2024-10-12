@@ -1,8 +1,12 @@
 # frozen_string_literal: true
 
+require 'dotenv'
+require 'elasticsearch'
 require 'json'
 require 'logger'
 require 'sinatra/base'
+
+Dotenv.load
 
 class MultiIO
   def initialize(*targets)
@@ -34,6 +38,8 @@ class App < Sinatra::Base
     use Rack::CommonLogger, multi_logger
 
     set :logger, multi_logger
+
+    Elasticsearch::Client.new(log: true, host: 'http://elasticsearch:9200', api_key: 'WVBaaGdKSUJ5eFdvTjdtWm5xR2s6dWhUOHZTM3lRVVNjMU9CMHNnNVdBUQ==')
   end
 
   before do
@@ -44,6 +50,25 @@ class App < Sinatra::Base
 
   after do
     logger.info "Response: #{response.status}"
+  end
+
+  get '/logs' do
+    client = Elasticsearch::Client.new(
+      host: 'http://elasticsearch:9200',
+      api_key: 'WlBabmdKSUJ5eFdvTjdtWnRhRi06bXFVcE1FUy1RQ3E4RFExYU9JV0pBUQ==',
+      log: true,
+    )
+
+    log_entry = {
+      ip: request.ip,
+      method: request.request_method,
+      path: request.path_info,
+      timestamp: Time.now.utc
+    }
+
+    client.index index: 'cookiejar-logs', body: log_entry
+
+    { status: 200, result: 'Log entry added to Elasticsearch' }.to_json
   end
 
   get '/' do
