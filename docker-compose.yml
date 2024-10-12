@@ -8,6 +8,8 @@ services:
       context: ./cookiejar
     environment:
       - TZ=Europe/Zagreb
+    volumes:
+      - ./logs:/usr/src/app/logs
 
   strings:
     image: strings

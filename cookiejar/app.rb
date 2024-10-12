@@ -24,7 +24,7 @@ end
 
 class App < Sinatra::Base
   configure do
-    log_file = File.new("#{settings.root}/app.log", 'a+')
+    log_file = File.new("#{settings.root}/logs/app.log", 'a+')
     log_file.sync = true
 
     multi_logger = Logger.new(MultiIO.new(STDOUT, log_file))
