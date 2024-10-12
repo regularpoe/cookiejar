@@ -39,7 +39,11 @@ class App < Sinatra::Base
 
     set :logger, multi_logger
 
-    Elasticsearch::Client.new(log: true, host: 'http://elasticsearch:9200', api_key: 'WVBaaGdKSUJ5eFdvTjdtWm5xR2s6dWhUOHZTM3lRVVNjMU9CMHNnNVdBUQ==')
+    set :elasticsearch_client, Elasticsearch::Client.new(
+      host: 'http://elasticsearch:9200',
+      api_key: 'WlBabmdKSUJ5eFdvTjdtWnRhRi06bXFVcE1FUy1RQ3E4RFExYU9JV0pBUQ==',
+      log: true,
+    )
   end
 
   before do
@@ -53,12 +57,6 @@ class App < Sinatra::Base
   end
 
   get '/logs' do
-    client = Elasticsearch::Client.new(
-      host: 'http://elasticsearch:9200',
-      api_key: 'WlBabmdKSUJ5eFdvTjdtWnRhRi06bXFVcE1FUy1RQ3E4RFExYU9JV0pBUQ==',
-      log: true,
-    )
-
     log_entry = {
       ip: request.ip,
       method: request.request_method,
@@ -66,7 +64,7 @@ class App < Sinatra::Base
       timestamp: Time.now.utc
     }
 
-    client.index index: 'cookiejar-logs', body: log_entry
+    settings.elasticsearch_client.index index: 'cookiejar-logs', body: log_entry
 
     { status: 200, result: 'Log entry added to Elasticsearch' }.to_json
   end
@@ -78,12 +76,26 @@ class App < Sinatra::Base
   end
 
   get '/slow' do
-    delay = rand(1..5)
-    logger.info "Sleeping for #{delay} seconds"
-    sleep(delay)
+    start_time = Time.now
+
+    sleep(rand(1..5))
 
     result = { status: 200, result: 'Hello from GET /slow' }.to_json
+
+    duration = (Time.now - start_time) * 1000
+
+    settings.elasticsearch_client.index(
+      index: 'cookiejar-logs',
+      body: {
+        endpoint: '/slow',
+        timestamp: Time.now.utc.iso8601,
+        response_time_ms: duration
+      }
+    )
+
+    logger.info "Sleeping for #{duration} seconds"
     logger.info "GET /slow response: #{result}"
+
     result
   end
 
